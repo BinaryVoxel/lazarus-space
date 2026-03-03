@@ -264,10 +264,10 @@ def generate_disrupted_space_variants():
     for i in range(1, 21):
         # Base alpha from 90 (variant 1) to 10 (variant 20)
         alpha = int(90 - (i - 1) * (90 - 10) / 19)
-        # Boost variants 1-10 by 20-40% (more boost on denser)
+        # Boost variants 1-10 by 50-82% (more boost on denser)
         if i <= 10:
-            # Variant 1 gets ~40% boost, variant 10 gets ~20%
-            boost = 1.4 - (i - 1) * 0.02
+            # Variant 1 gets ~82% boost, variant 10 gets ~59%
+            boost = (1.4 - (i - 1) * 0.02) * 1.3
             alpha = min(255, int(alpha * boost))
         img = base.copy()
         # Apply uniform alpha to all pixels.
