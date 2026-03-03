@@ -254,17 +254,21 @@ def generate_star_nebula():
 def generate_disrupted_space_variants():
     """Generate 20 opacity variants of the disrupted space texture.
 
-    Variant 1 = most opaque (alpha ~90).
-    Variant 20 = most transparent (alpha ~10).
-    Steps evenly across the range. Same starfield pattern,
-    only the global alpha level changes. The shell should
-    be nearly invisible in most areas — felt more than seen.
+    Variant 1 = most opaque, variant 20 = most transparent.
+    Variants 1-10 (dense patches) have boosted alpha for
+    darker, more defined patches. Variants 11-20 (transparent
+    areas) are unchanged — near-invisible as intended.
     """
     base = generate_disrupted_space()
     variants = {}
     for i in range(1, 21):
-        # Alpha from 90 (variant 1) to 10 (variant 20)
+        # Base alpha from 90 (variant 1) to 10 (variant 20)
         alpha = int(90 - (i - 1) * (90 - 10) / 19)
+        # Boost variants 1-10 by 20-40% (more boost on denser)
+        if i <= 10:
+            # Variant 1 gets ~40% boost, variant 10 gets ~20%
+            boost = 1.4 - (i - 1) * 0.02
+            alpha = min(255, int(alpha * boost))
         img = base.copy()
         # Apply uniform alpha to all pixels.
         r, g, b, _ = img.split()

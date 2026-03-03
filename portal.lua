@@ -1,6 +1,6 @@
 -- Lazarus Space: Portal growth, teleportation, and warp device interaction
 
-local PORTAL_GROWTH_INTERVAL = 0.104 -- seconds between growth ticks
+local PORTAL_GROWTH_INTERVAL = 0.135 -- seconds between growth ticks
 local PORTAL_TELEPORT_RANGE = 10000
 local PORTAL_Y_MIN = 85
 local PORTAL_Y_MAX = 120
@@ -41,9 +41,19 @@ end
 --- Analyze surrounding surfaces and select the best portal
 --- variant to coat all touching faces. Returns the variant
 --- node name if valid, nil if not.
+--- Check whether a node is a liquid (water, lava, etc.).
+local function is_liquid_node(name)
+	local def = minetest.registered_nodes[name]
+	return def and def.liquidtype and def.liquidtype ~= "none"
+end
+
 local function select_portal_variant(pos)
 	local node = minetest.get_node(pos)
-	if node.name ~= "air" then return nil end
+	-- Accept air and liquid positions as valid coating targets.
+	-- Liquid blocks are consumed and replaced by portal.
+	if node.name ~= "air" and not is_liquid_node(node.name) then
+		return nil
+	end
 
 	-- Check all 6 neighbors for solid surfaces.
 	-- Inclusive check: anything that is not air, not ignore,
@@ -53,13 +63,10 @@ local function select_portal_variant(pos)
 	for _, fd in ipairs(lazarus_space.FACE_DIRS) do
 		local np = vector.add(pos, fd)
 		local nnode = minetest.get_node(np)
-		local ndef = minetest.registered_nodes[nnode.name]
-		local is_liquid = ndef and ndef.liquidtype
-			and ndef.liquidtype ~= "none"
 		if nnode.name ~= "air"
 				and nnode.name ~= "ignore"
 				and not lazarus_space.is_portal(nnode.name)
-				and not is_liquid then
+				and not is_liquid_node(nnode.name) then
 			solid_faces[#solid_faces + 1] = fd.face
 		end
 	end
@@ -253,7 +260,7 @@ local function begin_portal_growth(field, pos)
 	-- Place central seed block.
 	if not place_portal_block(field, seed) then
 		minetest.set_node(seed,
-			{name = "lazarus_space:portal_floor"})
+			{name = "lazarus_space:portal_1f_floor"})
 		field.portal_positions[1] = seed
 	end
 
@@ -488,9 +495,9 @@ minetest.register_globalstep(function(dtime)
 						else
 							-- Not placed. Add to
 							-- frontier if position
-							-- is traversable (air
-							-- or non-walkable) so
-							-- the wave continues
+							-- is traversable (air,
+							-- liquid, or non-walkable)
+							-- so the wave continues
 							-- through open space.
 							local node =
 								minetest.get_node(
@@ -505,6 +512,8 @@ minetest.register_globalstep(function(dtime)
 								if not def
 										or not
 										def.walkable
+										or is_liquid_node(
+										node.name)
 										then
 									new_frontier[
 										#new_frontier
